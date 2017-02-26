@@ -144,12 +144,19 @@ class ExactInference(InferenceModule):
              of None will be returned if, and only if, the ghost is
              captured).
         """
-        noisyDistance = observation
-        emissionModel = busters.getObservationDistribution(noisyDistance)
-        pacmanPosition = gameState.getPacmanPosition()
-
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        pacmanPos = gameState.getPacmanPosition()
+        emissionProbability = busters.getObservationDistribution(observation)
+        currentBeliefs = self.beliefs
+        nextBeliefs = util.Counter()
+        positions = self.legalPositions
+        if observation is None:
+            nextBeliefs[self.getJailPosition()] = 1.0
+        else:
+            for position in positions:
+                trueDistance = util.manhattanDistance(position, pacmanPos)
+                nextBeliefs[position] = emissionProbability[trueDistance] * currentBeliefs[position]
+        nextBeliefs.normalize()
+        self.beliefs = nextBeliefs
 
 
     def elapseTime(self, gameState):
@@ -205,8 +212,15 @@ class ExactInference(InferenceModule):
         are used and how they combine to give us a belief distribution over new
         positions after a time update from a particular position.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        oldBeliefs = self.beliefs
+        newBeliefs = util.Counter()
+        for position in self.legalPositions:
+            newGameState = self.setGhostPosition(gameState, position)
+            positionDistribution = self.getPositionDistribution(newGameState)
+            for newPosition, probability in positionDistribution.items():
+                newBeliefs[newPosition] += probability * oldBeliefs[position]
+        newBeliefs.normalize()
+        self.beliefs = newBeliefs
 
     def getBeliefDistribution(self):
         return self.beliefs
