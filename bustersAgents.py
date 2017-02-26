@@ -176,5 +176,36 @@ class GreedyBustersAgent(BustersAgent):
         livingGhostPositionDistributions = \
             [beliefs for i, beliefs in enumerate(self.ghostBeliefs)
              if livingGhosts[i+1]]
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        mostLikelyPositions = [] # holds a list of (position, probability) that is max for each ghost
+        for distribution in livingGhostPositionDistributions:
+            likelyPosition, maxProbability = self.getBestPositionAndProbability(distribution)
+            mostLikelyPositions.append((likelyPosition, maxProbability))
+        closestGhostPosition, minDistance = self.getClosestGhostAndProbability(pacmanPosition, mostLikelyPositions)
+        bestAction = None
+        closestDistanceFromAction = float('inf')
+        for action in legalActions:
+            newPosition = Actions.getSuccessor(pacmanPosition, action)
+            newDistance = self.distancer.getDistance(newPosition, closestGhostPosition)
+            if newDistance < closestDistanceFromAction:
+                closestDistanceFromAction = newDistance
+                bestAction = action
+        return bestAction
+
+    def getBestPositionAndProbability(self, ghostPositionDistribution):
+        maxProbability = -float('inf')
+        likelyPosition = None
+        for position, probability in ghostPositionDistribution.items():
+            if probability > maxProbability:
+                likelyPosition = position
+                maxProbability = probability
+        return likelyPosition, maxProbability
+
+    def getClosestGhostAndProbability(self, pacmanPosition, mostLikelyPositions):
+        closestGhostPosition = None
+        minDistance = float('inf')
+        for position, probability in mostLikelyPositions:
+            distance = self.distancer.getDistance(pacmanPosition, position)
+            if distance < minDistance:
+                minDistance = distance
+                closestGhostPosition = position
+        return closestGhostPosition, minDistance
